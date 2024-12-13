@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <title>PO</title>
+</head>
+<body>
+        <div id="OneBlock" class="tabcontent active">
+            <main >
+                    <div class="overlay" onclick="closeLoadingScreen()"></div>
+                    <div class="LoadingScreen">
+                        <div class="VerhLoadingScreen">
+                            <h3>Загрузка файлов</h3>
+                            <button class="close-x" onclick="closeLoadingScreen()">
+                                <img src="{{ url_for('static', filename='img/close-x.svg') }}" alt="">
+                             </button>
+                        </div>
+                    
+                        <div class="listFiles">
+                            <span class="file" id="file-label"></span>
+                        </div>
+                        <p id="fileCount2"> </p>
+                        
+                        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data" onsubmit="return validateForm1()">
+                            <label class="file-btn" for="showUploadForm">Выбрать файлы</label>
+                            
+                            <button class="downloadBtn2" type="submit">Загрузить</button>
+                            <input id="showUploadForm" name="files" multiple class="custom-file-input" type="file" accept=".jpg, .jpeg, .png, .txt" onchange="updateFileLabel(this.files)">
+                        </form>
+                    </div>
+
+                    <div class="viewFilesV">
+                        <div class="listFilesV">
+                            <label class="fileList" for="file">Список файлов</label>
+                            <select size="25" id="file_selectV" name="file_select" onchange="updateImageV('file_selectV', 'fileImageV', 'selectedFileNameV')">
+                                {% for non in non_empty %}
+                                    {% set fileName = non.photo.split('/')[-1] %}
+                                    <option value="{{ non.photo }}" data-txt="{{ non.txt }}" data-val="{{ non.val_result }}">{{ fileName }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="thatFileV">
+                            <div class="">
+                                <div class="nameFileV">
+                                    <p class="selectedFileName">Файл:</p> 
+                                    <span id="selectedFileNameV"></span><br>    
+                                </div>
+                                <canvas id="fileImageV" width="500" height="500" style="border:1px solid #313131;"></canvas><br>
+                            </div>
+                        </div>
+                    </div> 
+
+
+
+                    <button onclick="openLoadingScreen()" class="btnDownload"> Загрузить</button>
+                    <button onclick="openCreateDataSet()" class="btnDownload">Создать датасет </button>
+
+                    <div class="overlayForCD" onclick="closeCreateDataSet()"></div>
+                    <div class="CreateDataSet">
+                        <div class="VerhLoadingScreen">
+                            <h1>Создать новый датасет</h1>
+                            <button class="close-x2" onclick="closeCreateDataSet()">
+                                <img src="{{ url_for('static', filename='img/close-x.svg') }}" alt="">
+                            </button>
+                            
+                        </div>
+                
+
+                            <div class="listFiles">
+                                <p id="fileCount">Всего размеченных фотографий:{{ non_empty_count }}</p>
+                            </div>
+
+                            <form id="photoForm" action="/copy_photos" method="post" onsubmit="return validateForm()">
+                                <label for="numPhotos">Количество фотографий:</label>
+                                <input type="number" id="numPhotos" name="num_photos" min="1" max="{{ non_empty_count }}" value="{{ non_empty_count }}" required><br>
+                                
+                                <label for="datasetName">Название папки датасета:</label>
+                                <input type="text" id="datasetName" name="dataset_name" required placeholder="Введите название папки"pattern="[A-Za-zА-Яа-яЁё0-9\s]+" title="Допустимы только буквы и цифры, пробелы."><br>
+                            
+                                <label for="trainSize">Размер train выборки (0-1):</label>
+                                <input type="number" id="trainSize" name="train_size" min="0" max="1" step="0.01" value="0.8" required placeholder="Например, 0.8"><br>
+                            
+                                <label for="valSize">Размер val выборки (0-1):</label>
+                                <input type="number" id="valSize" name="val_size" min="0" max="1" step="0.01" value="0.2" required placeholder="Например, 0.2"><br>
+                            
+                                <button type="submit">Сохранить датасет</button>
+                                
+                            </form><br>
+
+                    </div><br><br>
+
+                    <form action="{{ url_for('create_class') }}" method="POST" onsubmit="return showAlert1()">
+                        <label for="datasets">Выберите датасет:</label>
+                        <select id="datasets" name="selected_dataset" required>
+                            {% for dataset in datasets %}
+                                {% set dataset_name = dataset.dataset_path.split('/')[-1] %}
+                                <option value="{{ dataset.dataset_path }}">{{ dataset_name }}</option>
+                            {% endfor %}
+                        </select><br>
+                        
+                        <label for="class_name">Введите имя класса:</label>
+                        <input type="text" id="class_name" name="class_name" required>
+                        
+                        <button type="submit" >Создать класс</button>
+                    </form><br>
+
+
+                    <form action="{{ url_for('create_train_script') }}" method="POST" onsubmit="return showAlert2()">
+                        <label for="datasets">Выберите датасет:</label>
+                        <select id="datasets" name="selected_dataset" required>
+                            {% for dataset in datasets %}
+                                {% set dataset_name = dataset.dataset_path.split('/')[-1] %}
+                                <option value="{{ dataset.dataset_path }}">{{ dataset_name }}</option>
+                            {% endfor %}
+                        </select><br>
+
+                        <div class="form-group">
+                            <label for="imgsz">Размер изображения:</label>
+                            <input type="number" id="imgsz" name="imgsz" value="640" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="epochs">Количество эпох:</label>
+                            <input type="number" id="epochs" name="epochs" value="500" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="batch">Размер батча:</label>
+                            <input type="number" id="batch" name="batch" value="2" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="save_period">Период сохранения:</label>
+                            <input type="number" id="save_period" name="save_period" value="50" required>
+                        </div>
+
+                        <button type="submit" class="btnDownload">Создать train.py</button>
+                    </form>
+            </main>
+        </div>
+
+</body>
+</html>
